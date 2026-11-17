@@ -709,8 +709,10 @@ mark.second-mark { background: #e5d0fa; }
 .guide-qr img { display:block; width:100%; height:auto; }
 .guide-qr figcaption { padding:.2rem .25rem .5rem; text-align:center; color:#382249; font-size:clamp(1.1rem,1.8vw,1.5rem); font-weight:700; }
 @media(max-width:45rem) { .guide-layout { grid-template-columns:1fr; } .guide-qr { max-width:30rem; justify-self:center; } }
-@media(prefers-reduced-motion:no-preference) { .guide-slide:not([hidden]) .guide-passport { animation:guide-greeting 2.7s ease-in-out 1; } }
+@media(prefers-reduced-motion:no-preference) { .guide-slide:not([hidden]) .guide-passport { animation:guide-greeting 2.7s ease-in-out infinite; } }
 @keyframes guide-greeting { 0%,100% { transform:none; } 45% { transform:translateY(-.5rem) rotate(-3deg); } }
+.guide-slide { position:relative; }
+.guide-slide[data-motion-paused] .guide-passport { animation-play-state:paused; }
 </style>
 </head>
 <body>
@@ -1072,6 +1074,7 @@ mark.second-mark { background: #e5d0fa; }
       <figcaption>Scan to open your library guide.</figcaption>
     </figure>
   </div>
+  <button type="button" class="fishing-motion-control">Pause motion</button>
 </section>
 </main>
 
