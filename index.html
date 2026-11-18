@@ -725,8 +725,8 @@ mark.second-mark { background: #e5d0fa; }
     <select id="slide-picker"></select>
   </div>
   <span id="count"></span>
-  <button type="button" id="previous" aria-keyshortcuts="ArrowLeft"><span aria-hidden="true">←</span> Previous</button>
-  <button type="button" id="next" aria-keyshortcuts="ArrowRight">Next <span aria-hidden="true">→</span></button>
+  <button type="button" id="previous" aria-keyshortcuts="ArrowLeft ArrowUp PageUp Backspace"><span aria-hidden="true">←</span> Previous</button>
+  <button type="button" id="next" aria-keyshortcuts="ArrowRight ArrowDown PageDown Space">Next <span aria-hidden="true">→</span></button>
   <button type="button" id="fullscreen" hidden>Full screen</button>
 </nav>
 <main id="deck" class="passport" tabindex="-1">
@@ -1248,6 +1248,26 @@ mark.second-mark { background: #e5d0fa; }
     scheduleWelcomeTip();
   });
 
+  let fitFrame;
+  function fitSlide() {
+    cancelAnimationFrame(fitFrame);
+    fitFrame = requestAnimationFrame(() => {
+      const deck = document.querySelector('.passport');
+      deck.style.zoom = '';
+      deck.style.width = '';
+      if (window.innerWidth < 850 || window.matchMedia('print').matches) return;
+      const width = Math.min(window.innerWidth - 16, 1472);
+      deck.style.width = width + 'px';
+      const top = deck.getBoundingClientRect().top;
+      const available = Math.max(100, window.innerHeight - top - 16);
+      const scale = Math.min(1, available / deck.getBoundingClientRect().height);
+      deck.style.zoom = String(scale);
+    });
+  }
+  window.addEventListener('resize', fitSlide);
+  document.addEventListener('fullscreenchange', fitSlide);
+  document.fonts.ready.then(fitSlide);
+
   function show(index, stage, moveFocus = true) {
     if (index < 0 || index >= slides.length) return;
     const changed = current !== index;
@@ -1291,6 +1311,7 @@ mark.second-mark { background: #e5d0fa; }
     count.textContent = (index + 1) + ' of ' + slides.length;
     previous.disabled = index === 0 && stage === 0;
     next.disabled = index === slides.length - 1;
+    fitSlide();
     if (moveFocus && changed) {
       slide.querySelector('h1').focus({ preventScroll: true });
       window.scrollTo(0, 0);
@@ -1313,10 +1334,22 @@ mark.second-mark { background: #e5d0fa; }
   document.addEventListener('keydown', event => {
     if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey ||
         event.target.closest('input, select, textarea, [contenteditable]')) return;
-    if (event.key === 'ArrowRight' || event.key === 'ArrowLeft') {
+    const forward = ['ArrowRight', 'ArrowDown', 'PageDown', ' ', 'Spacebar', 'Enter', 'MediaTrackNext', 'MediaNextTrack'].includes(event.key);
+    const backward = ['ArrowLeft', 'ArrowUp', 'PageUp', 'Backspace', 'MediaTrackPrevious', 'MediaPreviousTrack'].includes(event.key);
+    // Preserve Space activation for focused buttons and links.
+    if ((event.key === ' ' || event.key === 'Spacebar' || event.key === 'Enter') &&
+        event.target.closest('button, a, [role="button"]')) return;
+    if (forward || backward) {
       event.preventDefault();
-      move(event.key === 'ArrowRight' ? 1 : -1);
+      move(forward ? 1 : -1);
     }
+  });
+
+  // Some presentation remotes send mouse clicks rather than keyboard keys.
+  const slideSurface = document.querySelector('.passport');
+  slideSurface.addEventListener('click', event => {
+    if (event.defaultPrevented || event.target.closest('a, button, input, select, textarea, [contenteditable]')) return;
+    move(1);
   });
 
   if (document.fullscreenEnabled && document.documentElement.requestFullscreen) {
